@@ -25,7 +25,7 @@ def liquid_login():
     r = requests.post(
         f"{LIQUID_BASE}/login",
         json={
-            "login": LIQUID_LOGIN,
+            "username": LIQUID_LOGIN,
             "domain": LIQUID_DOMAIN,
             "password": LIQUID_PASSWORD
         },
