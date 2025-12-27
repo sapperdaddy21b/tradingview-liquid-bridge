@@ -1,8 +1,11 @@
-from fastapi import FastAPI
+import os
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from typing import Optional
 
 app = FastAPI()
+
+WEBHOOK_SECRET = os.getenv("WEBHOOK_SECRET", "")  # set in Railway Variables
 
 class WebhookPayload(BaseModel):
     symbol: str
@@ -11,6 +14,7 @@ class WebhookPayload(BaseModel):
     entry: Optional[float] = None
     sl: Optional[float] = None
     tp: Optional[float] = None
+    secret: str  # REQUIRED now
 
 @app.get("/")
 def root():
@@ -18,5 +22,13 @@ def root():
 
 @app.post("/webhook")
 def webhook(payload: WebhookPayload):
-    # For now we just confirm we received it correctly
-    return {"status": "ok", "received": payload.dict()}
+    # 1) Secret check
+    if not WEBHOOK_SECRET:
+        raise HTTPException(status_code=500, detail="Server missing WEBHOOK_SECRET")
+    if payload.secret != WEBHOOK_SECRET:
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    # 2) Confirm received (safe for now)
+    data = payload.dict()
+    data.pop("secret", None)  # don't echo secret back
+    return {"status": "ok", "received": data}
